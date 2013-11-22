@@ -1234,7 +1234,8 @@ def master_callback(m, master):
         # GCS
         if mpstate.settings.mavfwd_rate or mtype != 'REQUEST_DATA_STREAM':
             for r in mpstate.mav_outputs:
-                r.write(m.get_msgbuf())
+				#print("mpstate.mav_outputs riga 1237")
+				r.write(m.get_msgbuf())
 
         # pass to modules
         for mod in mpstate.modules:
@@ -1252,9 +1253,10 @@ def master_callback(m, master):
 def process_master(m):
     '''process packets from the MAVLink master'''
     try:
-        s = m.recv()
+		#print("receive in process_master")
+		s = m.recv()
     except Exception:
-        return
+		return
     if mpstate.logqueue_raw:
         mpstate.logqueue_raw.put(str(s))
 
@@ -1268,21 +1270,29 @@ def process_master(m):
     msgs = m.mav.parse_buffer(s)
     if msgs:
         for msg in msgs:
-            if getattr(m, '_timestamp', None) is None:
-                m.post_message(msg)
-            if msg.get_type() == "BAD_DATA":
-                if opts.show_errors:
-                    mpstate.console.writeln("MAV error: %s" % msg)
-                mpstate.status.mav_error += 1
+			#print(msg.get_type())
+			if getattr(m, '_timestamp', None) is None: 
+				#print("timestamp interno process_master")
+				m.post_message(msg)
+			if msg.get_type() == "BAD_DATA":
+				print("badData interno process_master")
+				if opts.show_errors:
+					mpstate.console.writeln("MAV error: %s" % msg)
+				mpstate.status.mav_error += 1
+			
+				
+
 
     
 
 def process_mavlink(slave):
     '''process packets from MAVLink slaves, forwarding to the master'''
     try:
-        buf = slave.recv()
+		#print("provo a ricevere da slave")
+		buf = slave.recv()
     except socket.error:
-        return
+		print("socket error process_mavlink(slave)")
+		return
     try:
         if slave.first_byte:
             slave.auto_mavlink_version(buf)
@@ -1292,6 +1302,24 @@ def process_mavlink(slave):
         return
     if mpstate.settings.mavfwd and not mpstate.status.setup_mode:
         mpstate.master().write(m.get_msgbuf())
+        if m.get_msgId()==39:
+			print(m.get_type())
+			print(m.target_system)
+			print(m.target_component)
+			print(m.seq)
+			print(m.frame)
+			print(m.command)
+			print(m.current)
+			print(m.autocontinue)
+			print(m.param1)
+			print(m.param2)
+			print(m.param3)
+			print(m.param4)
+			print(m.x)
+			print(m.y)
+			print(m.z)
+			
+        #print(m.get_msgbuf())
     mpstate.status.counters['Slave'] += 1
 
 
@@ -1464,7 +1492,7 @@ def main_loop():
             if master.fd is not None:
                 rin.append(master.fd)
         for m in mpstate.mav_outputs:
-            rin.append(m.fd)
+			rin.append(m.fd)
         if rin == []:
             time.sleep(0.001)
             continue
@@ -1486,8 +1514,10 @@ def main_loop():
                     continue
             for m in mpstate.mav_outputs:
                 if fd == m.fd:
-                    process_mavlink(m)
-                    continue
+					#print("CI SONO!!")
+					process_mavlink(m)
+					continue
+					
 
             # this allow modules to register their own file descriptors
             # for the main select loop
@@ -1657,7 +1687,8 @@ Auto-detected serial ports are:
 
     # open any mavlink UDP ports
     for p in opts.output:
-        mpstate.mav_outputs.append(mavutil.mavudp(p, input=False))
+		print("mpstate.mav_outputs riga 1671")
+		mpstate.mav_outputs.append(mavutil.mavudp(p, input=False))
 
     if opts.sitl:
         mpstate.sitl_output = mavutil.mavudp(opts.sitl, input=False)
